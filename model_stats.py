@@ -8,13 +8,18 @@ import pandas as pd
 
 
 class stats:
-    def __init__(self, model, X_test, y_test, threshold=0.5):
+    def __init__(self, model, X_test, y_test, threshold=0.5, predict_proba = False):
         self.model = model
         self.X_test = X_test
         self.y_test = y_test
+        self.predict_proba = predict_proba
 
 
-        self.y_predict_proba = model.predict(X_test)
+        if self.predict_proba:
+            self.y_predict_proba = model.predict_proba(X_test)
+        else: 
+            self.y_predict_proba = model.predict(X_test)
+
         self.y_predict = np.where(self.y_predict_proba >= 0.5, 1, 0)
 
         self.default_scores = {'accuracy': accuracy_score(self.y_test, self.y_predict),
@@ -105,7 +110,7 @@ class stats:
     
     def plot_precision_recall(self, threshold=0.5):
         
-        precision, recall, thresholds = precision_recall_curve(self.y_test, np.where(self.y_predict_proba >= threshold, 1, 0))
+        precision, recall, thresholds = precision_recall_curve(self.y_test, self.y_predict_proba)
 
         idx = (thresholds >= threshold).argmax()
 
@@ -123,8 +128,15 @@ class stats:
 
         plt.legend()
 
+    
+    def plot_confusion_matrix(self, threshold = 0.5):
+        y_pred = np.where(self.y_predict_proba >= threshold, 1, 0)
+
+        cm = confusion_matrix(self.y_test, y_pred)
+        ConfusionMatrixDisplay(cm).plot()
+
     def plot_all_best_thresholds(self):
-        fig, ax = plt.subplots(4, 3, figsize=(15, 5))
+        fig, ax = plt.subplots(4, 3, figsize=(15, 15))
         for i, (k, v) in enumerate(self.best_threshold.items()):
             print(i, k, v)
             threshold = (k, v)
@@ -138,6 +150,8 @@ class stats:
             ConfusionMatrixDisplay(cm).plot(ax=ax[i][1])
 
             self.plot_threshold_scores(ax=ax[i][2])
+
+
 
 
     
